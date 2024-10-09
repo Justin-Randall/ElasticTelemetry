@@ -1,3 +1,7 @@
+// Copyright 2016-2024 Playscale Ptd Ltd and Justin Randall
+// MIT License, see LICENSE file for full details.
+
+#include "StringConversions.h"
 #include "Misc/AutomationTest.h"
 #include "ElasticTelemetrySettings.h"
 #include "ElasticTelemetryEnvironmentSettings.h"
@@ -63,6 +67,16 @@ bool FElasticTelemetryHelpersTest::RunTest(const FString& Parameters)
 	Herald::log(Herald::LogLevels::Info, "Helper no variadics");
 
 	Herald::log(Herald::LogLevels::Info, "Helper with variadics", "Hello", "World");
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FElasticTelemetryConversionsTest, "ElasticTelemetry.Settings.Conversions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FElasticTelemetryConversionsTest::RunTest(const FString& Parameters)
+{
+	FVector Location(1.0f, 2.0f, 3.0f);
+	Herald::log(Herald::LogLevels::Info, "Helper with variadics and FVector", "Location", Location);
 
 	return true;
 }

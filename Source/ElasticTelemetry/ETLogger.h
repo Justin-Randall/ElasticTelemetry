@@ -1,3 +1,6 @@
+// Copyright 2016-2024 Playscale Ptd Ltd and Justin Randall
+// MIT License, see LICENSE file for full details.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -6,7 +9,13 @@
 #include "Herald/Logger.hpp"
 #include "StringConversions.h"
 
-// Helpers for custom logging
+// ----------------------------------------------------------------------------
+// Helpers for custom logging.
+// - GetJsonTransformer()
+// - addHeader()
+// - removeHeader()
+// - log() with variadic arguments
+
 namespace Herald
 {
 	/// <summary>

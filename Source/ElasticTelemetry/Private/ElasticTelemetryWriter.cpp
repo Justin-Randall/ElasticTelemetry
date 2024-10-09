@@ -1,3 +1,6 @@
+// Copyright 2016-2024 Playscale Ptd Ltd and Justin Randall
+// MIT License, see LICENSE file for full details.
+
 #include "ElasticTelemetryWriter.h"
 #include "Herald/ILogWriter.hpp"
 #include "Herald/ILogWriterBuilder.hpp"

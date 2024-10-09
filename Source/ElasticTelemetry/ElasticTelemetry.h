@@ -1,4 +1,5 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2016-2024 Playscale Ptd Ltd and Justin Randall
+// MIT License, see LICENSE file for full details.
 
 #pragma once
 
@@ -12,6 +13,13 @@ DECLARE_LOG_CATEGORY_EXTERN(TelemetryLog, Log, All);
 
 class FElasticTelemetryOutputDevice;
 
+/// <summary>
+/// The ElasticTelemetry module is responsible for sending logs to an ElasticSearch server.
+/// Configuration settings are stored in the ElasticTelemetrySettings struct, with 3 default
+/// "Environment" configurations, each with their own settings. These are changed in the editor
+/// under Project Settings -> Plugins -> Elastic Telemetry. See the included README.md for more
+/// information on how to set up the ElasticSearch server and how to use the plugin.
+/// </summary>
 class ELASTICTELEMETRY_API FElasticTelemetryModule : public IModuleInterface
 {
 public:
@@ -37,7 +45,17 @@ protected:
 	void UpdateConfig();
 
 protected:
-	mutable FCriticalSection	   SettingsLock;
-	FElasticTelemetrySettings	   Settings;
+	// Since settings may be used by different threads, and because
+	// in the editor, it would be nice to have them updated in real-time,
+	// to test configurations, these are by-value and locked when accessed.
+	mutable FCriticalSection  SettingsLock;
+	FElasticTelemetrySettings Settings;
+
+	// This is instantiated in StartupModule and deleted in ShutdownModule
+	// It addes itself to the global log system via GLog->AddOutputDevice()
+	// in its constructor. All UE_LOG() will invoke OutputDevice->Serialize()
+	// which in turn will pass the log message to the JsonTransformer. Once the
+	// transformer is done with the message, it will be passed to the ElasticWriter
+	// which will queue it up for delivery to the ElasticSearch server.
 	FElasticTelemetryOutputDevice* OutputDevice;
 };

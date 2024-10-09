@@ -1,41 +1,12 @@
+// Copyright 2016-2024 Playscale Ptd Ltd and Justin Randall
+// MIT License, see LICENSE file for full details.
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
 #include "Logging/LogVerbosity.h"
 #include "ElasticTelemetrySettings.generated.h"
-
-#if 0
-// Needed to convert between Unreal's log verbosity and our custom log verbosity because Unreal's log verbosity will not work with a TArray
-UENUM(BlueprintType)
-enum class EElasticLogVerbosity : uint8
-{
-	NoLogging    UMETA(DisplayName = "No Logging"),
-	Fatal        UMETA(DisplayName = "Fatal"),
-	Error        UMETA(DisplayName = "Error"),
-	Warning      UMETA(DisplayName = "Warning"),
-	Display      UMETA(DisplayName = "Display"),
-	Log          UMETA(DisplayName = "Log"),
-	Verbose      UMETA(DisplayName = "Verbose"),
-	VeryVerbose  UMETA(DisplayName = "Very Verbose")
-};
-
-inline EElasticLogVerbosity ConvertLogVerbosity(const ELogVerbosity::Type Level)
-{
-	switch (Level)
-	{
-	case ELogVerbosity::NoLogging: return EElasticLogVerbosity::NoLogging;
-	case ELogVerbosity::Fatal: return EElasticLogVerbosity::Fatal;
-	case ELogVerbosity::Error: return EElasticLogVerbosity::Error;
-	case ELogVerbosity::Warning: return EElasticLogVerbosity::Warning;
-	case ELogVerbosity::Display: return EElasticLogVerbosity::Display;
-	case ELogVerbosity::Log: return EElasticLogVerbosity::Log;
-	case ELogVerbosity::Verbose: return EElasticLogVerbosity::Verbose;
-	case ELogVerbosity::VeryVerbose: return EElasticLogVerbosity::VeryVerbose;
-	default: return EElasticLogVerbosity::NoLogging;
-	}
-}
-#endif
 
 USTRUCT(BlueprintType)
 struct ELASTICTELEMETRY_API FElasticTelemetrySettings
