@@ -9,7 +9,6 @@
 #include "Herald/Logger.hpp"
 #include "Herald/JsonLogTransformerFactory.hpp"
 #include "ElasticTelemetryWriter.h"
-// #include "Herald/Logger.hpp"
 #include "Herald/LogEntry.hpp"
 #include <string>
 #include "StringConversions.h"
@@ -187,14 +186,28 @@ void FElasticTelemetryOutputDevice::Serialize(const TCHAR* Message, ELogVerbosit
 	static const std::string CategoryKey("Category");
 	static const std::string MessageKey("MESSAGE");
 	static const std::string VerbosityKey("Verbosity");
+
+	// --------------------------------------------------------------------------------------------
 	// IF the editor is in use AND IF an ensure is being triggered AND IF a debugger is present AND IF telemetry is configured to
 	// include callstacks for the requested error type THEN an unfornate string of events is triggered in UE4 internal macro
 	// processing and call stack generation that creates a deadlock. So, if you are running the editor under a debugger and have
 	// call stacks configured for this error level, do not expect them to show up.
-#if WITH_EDITOR
-	if (PrintCallStack && FPlatformMisc::IsDebuggerPresent())
-		PrintCallStack = false; // dirty hack to get around bad behavior with internals in UE4 ensure macros
-#endif
+
+	// Is this in the middle of an ensure AND is their a debugger present AND is the editor running?
+	// If so, don't print the call stack
+	bool bIsInEnsure = FDebug::IsEnsuring();
+	bool bIsDebuggerPresent = FPlatformMisc::IsDebuggerPresent();
+	bool bIsEditor = GIsEditor;
+	if (bIsInEnsure && bIsDebuggerPresent && bIsEditor)
+	{
+		PrintCallStack = false;
+	}
+	// If the above fix does not work, uncomment the following block and comment out the above block
+	// #if WITH_EDITOR
+	// if (PrintCallStack && FPlatformMisc::IsDebuggerPresent())
+	//	PrintCallStack = false; // dirty hack to get around bad behavior with internals in UE4 ensure macros
+	// #endif
+	// --------------------------------------------------------------------------------------------
 
 	if (PrintCallStack)
 	{

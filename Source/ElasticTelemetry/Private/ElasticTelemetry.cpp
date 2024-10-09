@@ -2,11 +2,6 @@
 // MIT License, see LICENSE file for full details.
 
 #include "ElasticTelemetry.h"
-#if WITH_EDITOR
-	#include "ISettingsModule.h"
-	#include "ISettingsSection.h"
-	#include "ISettingsContainer.h"
-#endif // WITH_EDITOR
 #include "ElasticTelemetryEnvironmentSettings.h"
 #include "HttpModule.h"
 #include "Herald/LogLevels.hpp"
@@ -32,6 +27,7 @@ FElasticTelemetryModule::~FElasticTelemetryModule()
 
 void FElasticTelemetryModule::StartupModule()
 {
+#if !UE_BUILD_SHIPPING
 	UpdateConfig();
 
 	// Already spawned from the editor most likely, which is
@@ -43,15 +39,7 @@ void FElasticTelemetryModule::StartupModule()
 	}
 
 	OutputDevice = new FElasticTelemetryOutputDevice(*this);
-#if WITH_EDITOR
-	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
-	{
-		SettingsModule->RegisterSettings("Project", "Plugins", "Elastic Telemetry",
-			LOCTEXT("ElasticTelemetrySettingsName", "Elastic Telemetry Settings"),
-			LOCTEXT("ElasticTelemetrySettingsDescription", "Configure Elastic Telemetry"),
-			GetMutableDefault<UElasticTelemetryEnvironmentSettings>());
-	}
-#endif // WITH_EDITOR
+
 	// ensure the http module is setup from this thread before attempting to use it elsewhere
 	// otherwise, the http module may not be ready when the http logger tries to use it
 	FHttpModule::Get();
@@ -68,21 +56,22 @@ void FElasticTelemetryModule::StartupModule()
 		Herald::addHeader("ComputerName", ComputerName);
 	}
 
-#if UE_SERVER
+	#if UE_SERVER
 	Herald::setJsonLogHeader("UserName", "DedicatedServer");
-#else
+	#else
 	// This returns the locally logged in user, not the Steam/XBox/Sony Network user
 	const auto UserName = FPlatformProcess::UserName();
 	if (nullptr != UserName)
 	{
 		Herald::addHeader("UserName", UserName);
 	}
-#endif
+	#endif // UE_SERVER
+#endif	   //! UE_BUILD_SHIPPING
 }
 
 void FElasticTelemetryModule::UpdateConfig()
 {
-	auto NewEnvSettings = GetMutableDefault<UElasticTelemetryEnvironmentSettings>();
+	const auto NewEnvSettings = GetDefault<UElasticTelemetryEnvironmentSettings>();
 	if (nullptr == NewEnvSettings)
 	{
 		UE_LOG(TelemetryLog, Error, TEXT("Failed to get settings."));

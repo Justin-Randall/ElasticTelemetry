@@ -23,10 +23,10 @@ public:
 		, IndexName("")
 		, ConfigPairs()
 		, CurrentPendingRequests(0)
+		, MaximumPendingRequests(4)
 		, WorkerThread(nullptr)
 		, bStopWorkerThread(false)
 		, QueueEvent(nullptr)
-		, MaximumPendingRequests(4)
 	{
 		QueueEvent = FPlatformProcess::GetSynchEventFromPool(false);
 

@@ -24,6 +24,11 @@
       "Name": "ElasticTelemetryTests",
       "Type": "DeveloperTool",
       "LoadingPhase": "Default"
+    },
+    {
+      "Name": "ElasticTelemetryEditor",
+      "Type": "Editor",
+      "LoadingPhase": "PostEngineInit"
     }
   ]
 }

@@ -20,10 +20,11 @@ public:
 	const FElasticTelemetrySettings* GetSettingsForEnvironment(const FString& Environment) const;
 	virtual FName					 GetCategoryName() const override;
 	virtual FName					 GetSectionName() const override;
-	FString							 GetActiveEnvironment() const { return ActiveEnvironment; }
+	inline FString					 GetActiveEnvironment() const { return ActiveEnvironment; }
+	inline void						 SetActiveEnvironment(const FString& Environment);
 
 public:
-	UPROPERTY(Config, EditAnywhere)
+	UPROPERTY(Config, EditAnywhere, meta = (EditCondition = false, HideEditConditionToggle))
 	FString ActiveEnvironment;
 
 	UPROPERTY(Config, EditAnywhere)

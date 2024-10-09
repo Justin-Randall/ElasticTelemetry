@@ -3,6 +3,7 @@
 
 #include "ElasticTelemetryEnvironmentSettings.h"
 #include "ElasticTelemetrySettings.h"
+#include "ElasticTelemetry.h"
 
 UElasticTelemetryEnvironmentSettings::UElasticTelemetryEnvironmentSettings()
 {
@@ -19,6 +20,19 @@ const FElasticTelemetrySettings* UElasticTelemetryEnvironmentSettings::GetSettin
 {
 	auto Result = Environments.Find(Key);
 	return Result;
+}
+
+void UElasticTelemetryEnvironmentSettings::SetActiveEnvironment(const FString& NewEnvironment)
+{
+	if (Environments.Contains(NewEnvironment))
+	{
+		ActiveEnvironment = NewEnvironment;
+		TryUpdateDefaultConfigFile(); // Updated to the new API
+	}
+	else
+	{
+		UE_LOG(TelemetryLog, Warning, TEXT("Environment %s does not exist."), *NewEnvironment);
+	}
 }
 
 const FElasticTelemetrySettings UElasticTelemetryEnvironmentSettings::GetActiveSettings() const
