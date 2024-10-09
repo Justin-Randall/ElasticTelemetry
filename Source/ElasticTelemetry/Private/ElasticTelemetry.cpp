@@ -1,9 +1,11 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ElasticTelemetry.h"
-#include "ISettingsModule.h"
-#include "ISettingsSection.h"
-#include "ISettingsContainer.h"
+#if WITH_EDITOR
+	#include "ISettingsModule.h"
+	#include "ISettingsSection.h"
+	#include "ISettingsContainer.h"
+#endif // WITH_EDITOR
 #include "ElasticTelemetryEnvironmentSettings.h"
 #include "HttpModule.h"
 #include "Herald/LogLevels.hpp"
@@ -40,7 +42,7 @@ void FElasticTelemetryModule::StartupModule()
 	}
 
 	OutputDevice = new FElasticTelemetryOutputDevice(*this);
-
+#if WITH_EDITOR
 	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
 	{
 		SettingsModule->RegisterSettings("Project", "Plugins", "Elastic Telemetry",
@@ -48,7 +50,7 @@ void FElasticTelemetryModule::StartupModule()
 			LOCTEXT("ElasticTelemetrySettingsDescription", "Configure Elastic Telemetry"),
 			GetMutableDefault<UElasticTelemetryEnvironmentSettings>());
 	}
-
+#endif // WITH_EDITOR
 	// ensure the http module is setup from this thread before attempting to use it elsewhere
 	// otherwise, the http module may not be ready when the http logger tries to use it
 	FHttpModule::Get();
