@@ -53,6 +53,12 @@ void FElasticTelemetryModule::StartupModule()
 	// otherwise, the http module may not be ready when the http logger tries to use it
 	FHttpModule::Get();
 
+	// Create a unique session ID guid for this session
+	// This is used to group logs together in ElasticSearch
+	// and can be used to filter logs by session
+	const auto SessionID = FGuid::NewGuid().ToString();
+	Herald::addHeader("SessionID", SessionID);
+
 	const auto ComputerName = FPlatformProcess::ComputerName();
 	if (nullptr != ComputerName)
 	{
@@ -119,6 +125,17 @@ FElasticTelemetrySettings FElasticTelemetryModule::GetSettings() const
 {
 	FScopeLock Lock(&SettingsLock);
 	return Settings;
+}
+
+Herald::ILogTransformerPtr FElasticTelemetryModule::GetJsonTransformer() const
+{
+	// Get the Transformer from the OutputDevice
+	if (!OutputDevice)
+	{
+		return nullptr;
+	}
+
+	return OutputDevice->GetJsonTransformer();
 }
 
 #undef LOCTEXT_NAMESPACE

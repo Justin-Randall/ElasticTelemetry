@@ -6,16 +6,13 @@
 #include "Modules/ModuleManager.h"
 #include "ElasticTelemetryEnvironmentSettings.h"
 #include "Herald/LogLevels.hpp"
+#include "Herald/ILogTransformer.hpp"
 
 DECLARE_LOG_CATEGORY_EXTERN(TelemetryLog, Log, All);
 
 class FElasticTelemetryOutputDevice;
-namespace Herald
-{
-	void log(LogLevels LogLevel, const FString& Message);
-} // namespace Herald
 
-class FElasticTelemetryModule : public IModuleInterface
+class ELASTICTELEMETRY_API FElasticTelemetryModule : public IModuleInterface
 {
 public:
 	FElasticTelemetryModule();
@@ -24,19 +21,22 @@ public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
-	// Return by value after locking and making a copy. In editor environments, settings may be updated real-time.
+	/// <summary>
+	/// Get the active configuration settings for the module. Returns by value. Locks the settings to allow real-time changes to be made in the editor.
+	/// </summary>
+	/// <returns>Active configuration settings.</returns>
 	FElasticTelemetrySettings GetSettings() const;
 
-	FElasticTelemetryOutputDevice* GetOutputDevice() const
-	{
-		return OutputDevice;
-	}
+	/// <summary>
+	/// The OutputDevice contains a log transformer that can be used to add headers to the log messages.
+	/// </summary>
+	/// <returns>ILogTransformerPtr with addHeader()/removeHeader()</returns>
+	Herald::ILogTransformerPtr GetJsonTransformer() const;
 
 protected:
 	void UpdateConfig();
 
 protected:
-	friend void					   Herald::log(LogLevels LogLevel, const FString& Message);
 	mutable FCriticalSection	   SettingsLock;
 	FElasticTelemetrySettings	   Settings;
 	FElasticTelemetryOutputDevice* OutputDevice;

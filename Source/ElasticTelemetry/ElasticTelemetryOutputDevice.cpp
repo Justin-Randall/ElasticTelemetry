@@ -9,19 +9,10 @@
 // #include "Herald/Logger.hpp"
 #include "Herald/LogEntry.hpp"
 #include <string>
-
-namespace std
-{
-	std::string to_string(const FString& value)
-	{
-		return TCHAR_TO_UTF8(*value);
-	}
-
-} // namespace std
+#include "StringConversions.h"
 
 namespace
 {
-
 	std::string LogVerbosityToString(ELogVerbosity::Type Verbosity)
 	{
 		switch (Verbosity)

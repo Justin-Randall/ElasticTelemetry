@@ -1,0 +1,59 @@
+### .gitignore for Unreal projects
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+
+.DS_Store
+
+# Ignore Visual Studio files
+*.VC.db
+*.VC.VC.opendb
+*.VC.VC.db-wal
+*.VC.VC.db-shm
+
+# Ignore files created by Unreal Engine
+*.opensdf
+*.sdf
+*.suo
+*.log
+*.tlog
+*.obj
+*.dat
+*.cache
+*.exe
+*.app
+*.log
+*.user
+*.ilk
+*.ipch
+*.pch
+*.res
+*.rsp
+*.vspscc
+*.vssscc
+
+# Ignore build and packaged folders
+Build/
+!Build/CMakeLists.txt
+
+# Ignore files in the plugin binaries that are platform-specific or generated
+Plugins/**/Binaries/*
+!Plugins/**/Binaries/*.uplugin
+
+# Ignore project files
+*.uproject
+*.uprojectdirs
+*.uasset
+*.umap
+*.ubulk
+*.ufnt
+*.udic
+*.uexp
+*.ubtmakefile
+*.ubuild
+*.ipdb
+
+# Ignore Unreal Engine cache
+*.ucache
+*.ShaderCache

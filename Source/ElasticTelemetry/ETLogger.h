@@ -4,15 +4,7 @@
 #include "ElasticTelemetry.h"
 #include "Herald/LogLevels.hpp"
 #include "Herald/Logger.hpp"
-#include "ElasticTelemetryOutputDevice.h"
-
-namespace std
-{
-	std::string to_string(const TCHAR* value)
-	{
-		return std::string(TCHAR_TO_UTF8(value));
-	}
-} // namespace std
+#include "StringConversions.h"
 
 // Helpers for custom logging
 namespace Herald
@@ -26,13 +18,12 @@ namespace Herald
 		FElasticTelemetryModule& ElasticTelemetryModule = FModuleManager::GetModuleChecked<FElasticTelemetryModule>("ElasticTelemetry");
 
 		// Get the Transformer from the OutputDevice
-		FElasticTelemetryOutputDevice* OutputDevice = ElasticTelemetryModule.GetOutputDevice();
-		if (!OutputDevice)
-			return nullptr;
+		// FElasticTelemetryOutputDevice* OutputDevice = ElasticTelemetryModule.GetOutputDevice();
+		// if (!OutputDevice)
+		//	return nullptr;
 
-		return OutputDevice->GetJsonTransformer();
+		return ElasticTelemetryModule.GetJsonTransformer();
 	}
-
 	/// <summary>
 	/// addHeader will insert a key-value pair into the headers of the JsonTransformer.
 	/// These are included with each log message transformed. Use cases include:
