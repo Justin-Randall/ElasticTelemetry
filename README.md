@@ -122,3 +122,9 @@ There are two features missing with the update.
 First, real-time updates to the configuration from the editor are not applied. A change to the configuration requires restarting the editor.
 
 Second, the reader/query functionality is not present. There have been some changes over the years to the ElasticSearch API, so there is not (at present) suppoort for a "query" mode to retrieve index data from ElasticSearch for use in the engine (such as for visualizations and design analytics from within the editor).
+
+## ThirdParty
+
+ElasticTelemetry uses Herald for the json log transformer and for the log writer interface to implement a custom writer shipping logs to ElasticSearch. The source for this library is freely available from the [Herald GitHub repo](https://github.com/Justin-Randall/Herald/)
+
+To update it independently of this plugin, either grab the latest continuous build release or clone it under `Plugins/ElasticTelemetry/Source/ThirdParty` and build it. It should be possible to build within an Unreal project directly if modifications are made to `ThirdParty/Herald.Build.cs`.
