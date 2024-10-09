@@ -219,7 +219,6 @@ public:
 		for (auto [k, v] : ConfigPairs)
 		{
 			result->addConfigPair(k, v);
-			UE_LOG(LogTemp, Warning, TEXT("ConfigPair: %s = %s"), *FString(k.c_str()), *FString(v.c_str()));
 		}
 		return result;
 	}
