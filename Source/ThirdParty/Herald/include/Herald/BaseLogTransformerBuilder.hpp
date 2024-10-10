@@ -1,3 +1,6 @@
+// Copyright 2016-2024 Playscale Ptd Ltd and Justin Randall
+// MIT License, see LICENSE file for full details.
+
 #ifndef _INCLUDED_BaseLogTransformerBuilder_hpp
 #define _INCLUDED_BaseLogTransformerBuilder_hpp
 

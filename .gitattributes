@@ -1,0 +1,2 @@
+# Ensure LF endings for all text files in the Herald library
+Source/ThirdParty/Herald/* text eol=lf
