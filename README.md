@@ -29,6 +29,8 @@ If the ElasticSearch cluster has a Kibana front end, log in, go to `Stack Manage
 
 ## Usage in Code
 
+Note: By default, the module startup does nothing if UE_BUILD_SHIPPING is defined. It will need to be manually changed to allow shipping builds to use this plugin.
+
 The plugin can include "headers" with each JSON log payload. Some useful defaults already enabled are a SessionID GUID, local computer user and machine name. Other cases may be to also assign mutiplayer session IDs so all players in the same match can be grouped when performing log filtering.
 
 To add a custom header, let's use the SessionID as an example:
@@ -127,4 +129,9 @@ Second, the reader/query functionality is not present. There have been some chan
 
 ElasticTelemetry uses Herald for the json log transformer and for the log writer interface to implement a custom writer shipping logs to ElasticSearch. The source for this library is freely available from the [Herald GitHub repo](https://github.com/Justin-Randall/Herald/)
 
-To update it independently of this plugin, either grab the latest continuous build release or clone it under `Plugins/ElasticTelemetry/Source/ThirdParty` and build it. It should be possible to build within an Unreal project directly if modifications are made to `ThirdParty/Herald.Build.cs`.
+To update it independently of this plugin, either:
+  - Grab the latest continuous build release.
+  - Clone it under `Plugins/ElasticTelemetry/Source/ThirdParty` and build it. 
+  - Run `RunTests.ps1` and it will download the release, delete the `Herald` directory and the unzip the new sources.
+  
+It should be possible to build within an Unreal project directly if modifications are made to `ThirdParty/Herald.Build.cs`.
