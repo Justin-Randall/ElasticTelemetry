@@ -57,7 +57,7 @@ void FElasticTelemetryModule::StartupModule()
 	}
 
 	#if UE_SERVER
-	Herald::setJsonLogHeader("UserName", "DedicatedServer");
+	Herald::addHeader("UserName", "DedicatedServer");
 	#else
 	// This returns the locally logged in user, not the Steam/XBox/Sony Network user
 	const auto UserName = FPlatformProcess::UserName();
