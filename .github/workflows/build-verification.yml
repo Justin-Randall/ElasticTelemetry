@@ -2,6 +2,7 @@ name: Build Verification
 
 env:
   PROJECT_NAME: EmptyPluginProject
+  FORCE_UPDATE: 1
 
 on:
   push:
