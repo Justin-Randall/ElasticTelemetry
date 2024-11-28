@@ -20,7 +20,7 @@ jobs:
     - name: Checkout EmptyPluginProject
       uses: actions/checkout@v3
       with:
-        token: ${{ secrets.Justin-PAT-Actions-ReadOnly }}
+        token: ${{ secrets.READONLYPAT }}
         repository: Justin-Randall/EmptyPluginProject
         ref: main
         path: .
