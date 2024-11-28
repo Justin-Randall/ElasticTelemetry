@@ -1,0 +1,49 @@
+name: Build Verification
+
+env:
+  PROJECT_NAME: EmptyPluginProject
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout EmptyPluginProject
+      uses: actions/checkout@v3
+      with:
+        repository: Justin-Randall/EmptyPluginProject
+        ref: main
+        path: .
+        clean: false
+    
+    - name: Checkout ElasticTelemetry
+      uses: actions/checkout@v3
+      with:
+        repository: Justin-Randall/ElasticTelemetry
+        path: ./Plugins/ElasticTelemetry
+        clean: false
+
+    - name: Add Unreal Engine to the PATH
+      run: |
+        if (!(Test-Path $env:UE_PATH)) {
+          Write-Output "Unreal Engine is not installed at the expected path."
+          exit 1
+        }
+        Write-Output "Adding $env:UE_PATH\Engine\Binaries\Win64 to the path."
+        $env:PATH += ";$env:UE_PATH\Engine\Binaries\Win64"
+        
+    - name: Build and Cook Project
+      run: |
+        Write-Output "GITHUB_WORKSPACE=${env:GITHUB_WORKSPACE}"
+        Write-Output "PROJECT_NAME=${env:PROJECT_NAME}"
+        Write-Output "UE_PATH=${env:UE_PATH}"
+        Write-Output 'Command: "$env:UE_PATH\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun -project="$env:GITHUB_WORKSPACE\${env:PROJECT_NAME}.uproject" -build -target="${env:PROJECT_NAME}" -NoCleanIntermediate -NoCleanSave'
+        & "$env:UE_PATH\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun -project="$env:GITHUB_WORKSPACE\${env:PROJECT_NAME}.uproject" -build -target="${env:PROJECT_NAME}" -NoCleanIntermediate -NoCleanSave
