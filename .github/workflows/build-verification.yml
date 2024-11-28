@@ -20,7 +20,7 @@ jobs:
     - name: Checkout EmptyPluginProject
       uses: actions/checkout@v3
       with:
-        ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        token: ${{ secrets.Justin-PAT-Actions-ReadOnly }}
         repository: Justin-Randall/EmptyPluginProject
         ref: main
         path: .
