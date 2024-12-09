@@ -22,11 +22,16 @@ struct ELASTICTELEMETRY_API FElasticTelemetrySettings
 	bool Enabled;
 
 	// Properties
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "ElasticSearch API endpoint. Usually https://someserver.com:9200/")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,
+	    DisplayName = "ElasticSearch API endpoint. Usually https://someserver.com:9200/")
 	FString EndpointURL;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "Index prefix for all log messages, defaults to UELog")
 	FString IndexName;
+
+	UPROPERTY(
+	    EditAnywhere, BlueprintReadOnly, DisplayName = "Index prefix for all events, defaults to testing_game_events")
+	FString EventIndexName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "ElasticSearch user. Ask server administrator.")
 	FString Username;
@@ -76,9 +81,11 @@ struct ELASTICTELEMETRY_API FElasticTelemetrySettings
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool IncludeCallstacksOnVeryVerbose;
 
-	UPROPERTY(EditAnywhere, BluePrintReadOnly, DisplayName = "List of categories to exclude. Ignored if IncludedCategories is not empty.")
+	UPROPERTY(EditAnywhere, BluePrintReadOnly,
+	    DisplayName = "List of categories to exclude. Ignored if IncludedCategories is not empty.")
 	TArray<FName> ExcludedLogCategories;
 
-	UPROPERTY(EditAnywhere, BluePrintReadOnly, DisplayName = "List of categories to only include. Exclusions are ignored if this is not empty.")
+	UPROPERTY(EditAnywhere, BluePrintReadOnly,
+	    DisplayName = "List of categories to only include. Exclusions are ignored if this is not empty.")
 	TArray<FName> IncludedLogCategories;
 };

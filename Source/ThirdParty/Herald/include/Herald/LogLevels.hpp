@@ -17,12 +17,14 @@ namespace Herald
 		Info     = (1 << 3),
 		Warning  = (1 << 4),
 		Error    = (1 << 5),
-		Fatal    = (1 << 6)
+		Fatal    = (1 << 6),
+		Event    = (1 << 7) // Event is a special log level that is always enabled
 	};
 
-	const std::map<LogLevels, std::string> logTypeNames = {
-	    {(LogLevels::Analysis), "Analysis"}, {(LogLevels::Debug), "Debug"}, {(LogLevels::Info), "Info"},  {(LogLevels::Warning), "Warning"},
-	    {(LogLevels::Error), "Error"},       {(LogLevels::Fatal), "Fatal"}, {(LogLevels::Trace), "Trace"}};
+	const std::map<LogLevels, std::string> logTypeNames = {{(LogLevels::Analysis), "Analysis"}, {(LogLevels::Debug), "Debug"},
+	                                                       {(LogLevels::Info), "Info"},         {(LogLevels::Warning), "Warning"},
+	                                                       {(LogLevels::Error), "Error"},       {(LogLevels::Fatal), "Fatal"},
+	                                                       {(LogLevels::Trace), "Trace"},       {(LogLevels::Event), "Event"}};
 
 	inline std::atomic<uint32_t> enabledLogLevels(0xFFFFFFFF);
 

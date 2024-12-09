@@ -1,3 +1,6 @@
+// Copyright 2016-2024 Playscale Ptd Ltd and Justin Randall
+// MIT License, see LICENSE file for full details.
+
 using UnrealBuildTool;
 
 public class ElasticTelemetryEditor : ModuleRules
@@ -15,6 +18,9 @@ public class ElasticTelemetryEditor : ModuleRules
 					"Core",
 					"CoreUObject",
 					"Engine",
+					"Json",
+					"HTTP",
+					"DeveloperSettings",
 					"UnrealEd",
 					"Slate",
 					"SlateCore",

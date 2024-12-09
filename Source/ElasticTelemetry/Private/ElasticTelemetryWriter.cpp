@@ -3,7 +3,7 @@
 
 #include "ElasticTelemetryWriter.h"
 #include "Herald/ILogWriter.hpp"
-#include "Herald/ILogWriterBuilder.hpp"
+#include "Herald/WriterBuilder.hpp"
 #include "Interfaces/IHttpResponse.h"
 #include "HttpModule.h"
 
@@ -15,18 +15,18 @@
 
 class ElasticTelemetryWriter : public Herald::ILogWriter, public FRunnable
 {
-public:
+  public:
 	ElasticTelemetryWriter()
-		: EndpointURL("")
-		, Username("")
-		, Password("")
-		, IndexName("")
-		, ConfigPairs()
-		, CurrentPendingRequests(0)
-		, MaximumPendingRequests(4)
-		, WorkerThread(nullptr)
-		, bStopWorkerThread(false)
-		, QueueEvent(nullptr)
+	    : EndpointURL("")
+	    , Username("")
+	    , Password("")
+	    , IndexName("")
+	    , ConfigPairs()
+	    , CurrentPendingRequests(0)
+	    , MaximumPendingRequests(4)
+	    , WorkerThread(nullptr)
+	    , bStopWorkerThread(false)
+	    , QueueEvent(nullptr)
 	{
 		QueueEvent = FPlatformProcess::GetSynchEventFromPool(false);
 
@@ -47,32 +47,34 @@ public:
 		QueueEvent = nullptr;
 	}
 
-	virtual ILogWriter& addConfigPair(const std::string& key, const std::string& value) override
+	virtual ILogWriter & addConfigPair(const std::string & key, const std::string & value) override
 	{
-		// Config pairs should include ElasticSearch paramaters like
-		// the endpoint URL, the writer username and password, the index name, etc.
-		ConfigPairs[key] = value;
+		{
+			FScopeLock Lock(&ConfigMutex);
+			// Config pairs should include ElasticSearch paramaters like
+			// the endpoint URL, the writer username and password, the index name, etc.
+			ConfigPairs[key] = value;
 
-		if (key == "EndpointURL")
-			EndpointURL = value.c_str();
-		else if (key == "Username")
-			Username = value.c_str();
-		else if (key == "Password")
-			Password = value.c_str();
-		else if (key == "IndexName")
-			IndexName = value.c_str();
+			if (key == "EndpointURL")
+				EndpointURL = value.c_str();
+			else if (key == "Username")
+				Username = value.c_str();
+			else if (key == "Password")
+				Password = value.c_str();
+			else if (key == "IndexName")
+				IndexName = value.c_str();
 
-		// ensure endpoint URL ends with a trailing slash
-		if (EndpointURL.Len() > 0 && EndpointURL[EndpointURL.Len() - 1] != '/')
-			EndpointURL += '/';
-
+			// ensure endpoint URL ends with a trailing slash
+			if (EndpointURL.Len() > 0 && EndpointURL[EndpointURL.Len() - 1] != '/')
+				EndpointURL += '/';
+		}
 		return *this;
 	}
 
 	// This is going to happen in the same thread as the engine's GLog call context
 	// so the write() method will merely queue up the message for the worker thread
 	// to dispatch to the ElasticSearch server without blocking the game on I/O
-	virtual void write(const std::string& Msg) override
+	virtual void write(const std::string & Msg) override
 	{
 		if (bStopWorkerThread)
 			return;
@@ -128,22 +130,23 @@ public:
 			QueueEvent->Trigger();
 	}
 
-	FString							   EndpointURL;
-	FString							   Username;
-	FString							   Password;
-	FString							   IndexName;
+	FString                            EndpointURL;
+	FString                            Username;
+	FString                            Password;
+	FString                            IndexName;
 	std::map<std::string, std::string> ConfigPairs;
-	uint32_t						   CurrentPendingRequests;
-	uint32_t						   MaximumPendingRequests;
+	uint32_t                           CurrentPendingRequests;
+	uint32_t                           MaximumPendingRequests;
 
 	// queue for outbound messages for the worker thread to pick up
-	FRunnableThread*	WorkerThread;
+	FRunnableThread *   WorkerThread;
 	TQueue<std::string> OutboundMessages;
-	FThreadSafeBool		bStopWorkerThread;
-	FCriticalSection	QueueMutex;
-	FEvent*				QueueEvent;
+	FThreadSafeBool     bStopWorkerThread;
+	FCriticalSection    QueueMutex;
+	FEvent *            QueueEvent;
+	FCriticalSection    ConfigMutex;
 
-	void SendHttpRequest(const FString& Message)
+	void SendHttpRequest(const FString & Message)
 	{
 		static FString InCall;
 		if (Message == InCall)
@@ -152,14 +155,20 @@ public:
 		}
 		InCall = Message;
 
-		FHttpModule& Http = FHttpModule::Get();
-		auto		 Request = Http.CreateRequest();
+		FHttpModule & Http    = FHttpModule::Get();
+		auto          Request = Http.CreateRequest();
 		// const int32	 MaximumPendingRequests = Settings.MaximumPendingRequests;
 
-		const FString FullURL = EndpointURL + IndexName + "/_doc";
-		const FString Auth = FBase64::Encode(Username + ":" + Password);
-		const FString AuthLine = FString("Basic ") + Auth;
+		FString FullURL;
+		FString Auth;
+		FString AuthLine;
 
+		{
+			FScopeLock Lock(&ConfigMutex);
+			FullURL  = EndpointURL + IndexName + "/_doc";
+			Auth     = FBase64::Encode(Username + ":" + Password);
+			AuthLine = FString("Basic ") + Auth;
+		}
 		Request->SetURL(FullURL);
 		Request->SetVerb("POST");
 		Request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
@@ -167,7 +176,8 @@ public:
 		Request->SetHeader("Authorization", AuthLine);
 
 		Request->SetContentAsString(Message);
-		// Prevent flooding libcurl. If it runs out of connections, it will spam like mad and drop the frame rate to 2FPS
+		// Prevent flooding libcurl. If it runs out of connections, it will spam like mad and drop the frame rate to
+		// 2FPS
 		while (!bStopWorkerThread && CurrentPendingRequests >= MaximumPendingRequests)
 		{
 			FPlatformProcess::Sleep(0.1f);
@@ -177,57 +187,34 @@ public:
 		// This is the only thread accessing it, so no need to lock
 		CurrentPendingRequests++;
 		Request->ProcessRequest();
-		Request->OnProcessRequestComplete().BindLambda([this](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) {
-			// Decrement the pending request count
-			// This is the only thread accessing it, so no need to lock
-			CurrentPendingRequests--;
-			InCall.Reset();
+		Request->OnProcessRequestComplete().BindLambda(
+		    [this](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) {
+			    // Decrement the pending request count
+			    // This is the only thread accessing it, so no need to lock
+			    CurrentPendingRequests--;
+			    InCall.Reset();
 
-			int32 ResponseCode = 0;
-			if (Response)
-				ResponseCode = Response->GetResponseCode();
+			    int32 ResponseCode = 0;
+			    if (Response)
+				    ResponseCode = Response->GetResponseCode();
 
-			if (ResponseCode > 399 || !bWasSuccessful) // error
-			{
-				// for debugging - do not submit a change with this active.
-				// Because this lambda capture may trigger with HttpResponse
-				// in an unknown state late in the application's lifecycle!
-				// auto Content = Response->GetContentAsString();
+			    if (ResponseCode > 399 || !bWasSuccessful) // error
+			    {
+				    // for debugging - do not submit a change with this active.
+				    // Because this lambda capture may trigger with HttpResponse
+				    // in an unknown state late in the application's lifecycle!
+				    // auto Content = Response->GetContentAsString();
 
-				// the log server is having problems, or the client cannot reach it, so
-				// stop doing all of this work for nothing.
-				Request->CancelRequest();
-				Stop();
-			}
-		});
+				    // the log server is having problems, or the client cannot reach it, so
+				    // stop doing all of this work for nothing.
+				    Request->CancelRequest();
+				    Stop();
+			    }
+		    });
 	}
-};
-
-class ElasticTelemetryWriterBuilder : public Herald::ILogWriterBuilder
-{
-public:
-	ElasticTelemetryWriterBuilder() = default;
-	virtual ILogWriterBuilder& addConfigPair(const std::string& key, const std::string& value) override
-	{
-		ConfigPairs.push_back({ key, value });
-		return *this;
-	}
-
-	virtual Herald::ILogWriterPtr build() override
-	{
-		auto result = std::make_unique<ElasticTelemetryWriter>();
-		for (auto [k, v] : ConfigPairs)
-		{
-			result->addConfigPair(k, v);
-		}
-		return result;
-	}
-	virtual ~ElasticTelemetryWriterBuilder() override {}
-
-	std::vector<std::pair<std::string, std::string>> ConfigPairs;
 };
 
 Herald::ILogWriterBuilderPtr createElasticTelemetryWriterBuilder()
 {
-	return std::make_unique<ElasticTelemetryWriterBuilder>();
+	return std::make_unique<Herald::LogWriterBuilder<ElasticTelemetryWriter>>();
 }

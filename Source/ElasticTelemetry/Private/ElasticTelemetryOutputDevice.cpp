@@ -12,6 +12,7 @@
 #include "Herald/LogEntry.hpp"
 #include <string>
 #include "StringConversions.h"
+#include "FileNameFriendly.h"
 
 namespace
 {
@@ -19,69 +20,40 @@ namespace
 	{
 		switch (Verbosity)
 		{
-			case ELogVerbosity::NoLogging:
-				return "NoLogging";
-			case ELogVerbosity::Fatal:
-				return "Fatal";
-			case ELogVerbosity::Error:
-				return "Error";
-			case ELogVerbosity::Warning:
-				return "Warning";
-			case ELogVerbosity::Display:
-				return "Display";
-			case ELogVerbosity::Log:
-				return "Log";
-			case ELogVerbosity::Verbose:
-				return "Verbose";
-			case ELogVerbosity::VeryVerbose:
-				return "VeryVerbose";
-			default:
-				return "Unknown";
+		case ELogVerbosity::NoLogging:
+			return "NoLogging";
+		case ELogVerbosity::Fatal:
+			return "Fatal";
+		case ELogVerbosity::Error:
+			return "Error";
+		case ELogVerbosity::Warning:
+			return "Warning";
+		case ELogVerbosity::Display:
+			return "Display";
+		case ELogVerbosity::Log:
+			return "Log";
+		case ELogVerbosity::Verbose:
+			return "Verbose";
+		case ELogVerbosity::VeryVerbose:
+			return "VeryVerbose";
+		default:
+			return "Unknown";
 		}
 	}
 } // namespace
 
-/// <summary>
-/// FileNameFriendly
-///
-/// The index name is used to programmatically instance new indices
-/// in ElasticSearch. Internally, these names are used as filenames,
-/// so only characters that are valid for filenames should be used.
-///
-/// </summary>
-/// <param name="IndexName"></param>
-/// <returns>
-/// A normalized, lower-case FString suitable for sending to
-/// ElasticSearch for use as an index.
-/// </returns>
-FString FileNameFriendly(const FString& IndexName)
-{
-	FString Result = IndexName.ToLower();
-	for (TCHAR& i : Result)
-	{
-		if ((i >= 'a' && i <= 'z') || (i >= '0' && i <= '9') || (i == '-') || (i == '_') || (i == '.'))
-			continue;
-		i = '_';
-	}
-	return Result;
-}
-
-FElasticTelemetryOutputDevice::FElasticTelemetryOutputDevice(const FElasticTelemetryModule& Module)
-	: ProcessingRequestLock()
-	, ProcessingRequestCount(0)
-	, JsonTransformer(nullptr)
-	, ElasticWriter(nullptr)
-	, ElasticTelemetry(Module)
+FElasticTelemetryOutputDevice::FElasticTelemetryOutputDevice(const FElasticTelemetryModule & Module)
+    : ProcessingRequestLock()
+    , ProcessingRequestCount(0)
+    , JsonTransformer(nullptr)
+    , ElasticWriter(nullptr)
+    , ElasticTelemetry(Module)
 {
 	if (!GLog)
 		return;
 
-	// auto shared = std::make_shared<FElasticTelemetryOutputDevice>(*this);
-	// Herald::ILogWriterPtr wptr(this);
-	// JsonTransformer = LogFactory->attachLogWriter(wptr).build();
-
-	// The writer is responsible for queueing up messages from the transformer and delivering them to the ElasticSearch server
-	// Give it the config pairs from the settings
+	// The writer is responsible for queueing up messages from the transformer and delivering them to the ElasticSearch
+	// server Give it the config pairs from the settings
 	auto WriterBuilder = createElasticTelemetryWriterBuilder();
 	if (nullptr == WriterBuilder)
 	{
@@ -94,17 +66,18 @@ FElasticTelemetryOutputDevice::FElasticTelemetryOutputDevice(const FElasticTelem
 	auto ActiveSettings = ElasticTelemetry.GetSettings();
 
 	// add the config pairs to the writer
-	std::string IndexName = TCHAR_TO_UTF8(*FileNameFriendly(ActiveSettings.IndexName));
+	// TODO: this should happen via ElasticTelemetryModule::UpdateConfig() so the editor does not need a restart
+	//   to apply endpoint or configuration changes. Probably best to only have it applied there to avoid confusion.
+	std::string IndexName   = TCHAR_TO_UTF8(*FileNameFriendly(ActiveSettings.IndexName));
 	std::string EndpointURL = TCHAR_TO_UTF8(*ActiveSettings.EndpointURL);
-	std::string Username = TCHAR_TO_UTF8(*ActiveSettings.Username);
-	std::string Password = TCHAR_TO_UTF8(*ActiveSettings.Password);
+	std::string Username    = TCHAR_TO_UTF8(*ActiveSettings.Username);
+	std::string Password    = TCHAR_TO_UTF8(*ActiveSettings.Password);
 
-	ElasticWriter = WriterBuilder->addConfigPair(
-									 "IndexName", IndexName)
-						.addConfigPair("EndpointURL", EndpointURL)
-						.addConfigPair("Username", Username)
-						.addConfigPair("Password", Password)
-						.build();
+	ElasticWriter = WriterBuilder->addConfigPair("IndexName", IndexName)
+	                    .addConfigPair("EndpointURL", EndpointURL)
+	                    .addConfigPair("Username", Username)
+	                    .addConfigPair("Password", Password)
+	                    .build();
 
 	// Create the log transformer
 	auto LogFactory = Herald::createJsonLogTransformerBuilder();
@@ -115,7 +88,8 @@ FElasticTelemetryOutputDevice::FElasticTelemetryOutputDevice(const FElasticTelem
 	}
 
 	JsonTransformer = LogFactory->attachLogWriter(ElasticWriter).build();
-	GLog->AddOutputDevice(this); // do this last, don't want log events arriving before the transformer/writer chain is in place
+	GLog->AddOutputDevice(
+	    this); // do this last, don't want log events arriving before the transformer/writer chain is in place
 }
 
 FElasticTelemetryOutputDevice::~FElasticTelemetryOutputDevice()
@@ -124,7 +98,8 @@ FElasticTelemetryOutputDevice::~FElasticTelemetryOutputDevice()
 		GLog->RemoveOutputDevice(this);
 }
 
-void FElasticTelemetryOutputDevice::Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const FName& Category)
+void FElasticTelemetryOutputDevice::Serialize(
+    const TCHAR * Message, ELogVerbosity::Type Verbosity, const FName & Category)
 {
 	const std::string CategoryName = TCHAR_TO_UTF8(*(Category.GetPlainNameString()));
 
@@ -136,7 +111,7 @@ void FElasticTelemetryOutputDevice::Serialize(const TCHAR* Message, ELogVerbosit
 	auto ActiveSettings = ElasticTelemetry.GetSettings();
 
 	const std::string Msg(TCHAR_TO_UTF8(Message));
-	bool			  PrintCallStack = false;
+	bool              PrintCallStack = false;
 
 	for (const auto excludedCategory : ActiveSettings.ExcludedLogCategories)
 	{
@@ -149,36 +124,36 @@ void FElasticTelemetryOutputDevice::Serialize(const TCHAR* Message, ELogVerbosit
 
 	switch (Verbosity)
 	{
-		case ELogVerbosity::Fatal:
-			LType = Herald::LogLevels::Fatal;
-			PrintCallStack = ActiveSettings.IncludeCallstacksOnFatal;
-			break;
-		case ELogVerbosity::Error:
-			LType = Herald::LogLevels::Error;
-			PrintCallStack = ActiveSettings.IncludeCallstacksOnError;
-			break;
-		case ELogVerbosity::Warning:
-			LType = Herald::LogLevels::Warning;
-			PrintCallStack = ActiveSettings.IncludeCallstacksOnWarning;
-			break;
-		case ELogVerbosity::Display:
-			LType = Herald::LogLevels::Info;
-			PrintCallStack = ActiveSettings.IncludeCallstacksOnDisplay;
-			break;
-		case ELogVerbosity::Log:
-			LType = Herald::LogLevels::Debug;
-			PrintCallStack = ActiveSettings.IncludeCallstacksOnLog;
-			break;
-		case ELogVerbosity::Verbose:
-			LType = Herald::LogLevels::Trace;
-			PrintCallStack = ActiveSettings.IncludeCallstacksOnVerbose;
-			break;
-		case ELogVerbosity::VeryVerbose:
-			LType = Herald::LogLevels::Analysis;
-			PrintCallStack = ActiveSettings.IncludeCallstacksOnVeryVerbose;
-			break;
-		default:
-			break;
+	case ELogVerbosity::Fatal:
+		LType          = Herald::LogLevels::Fatal;
+		PrintCallStack = ActiveSettings.IncludeCallstacksOnFatal;
+		break;
+	case ELogVerbosity::Error:
+		LType          = Herald::LogLevels::Error;
+		PrintCallStack = ActiveSettings.IncludeCallstacksOnError;
+		break;
+	case ELogVerbosity::Warning:
+		LType          = Herald::LogLevels::Warning;
+		PrintCallStack = ActiveSettings.IncludeCallstacksOnWarning;
+		break;
+	case ELogVerbosity::Display:
+		LType          = Herald::LogLevels::Info;
+		PrintCallStack = ActiveSettings.IncludeCallstacksOnDisplay;
+		break;
+	case ELogVerbosity::Log:
+		LType          = Herald::LogLevels::Debug;
+		PrintCallStack = ActiveSettings.IncludeCallstacksOnLog;
+		break;
+	case ELogVerbosity::Verbose:
+		LType          = Herald::LogLevels::Trace;
+		PrintCallStack = ActiveSettings.IncludeCallstacksOnVerbose;
+		break;
+	case ELogVerbosity::VeryVerbose:
+		LType          = Herald::LogLevels::Analysis;
+		PrintCallStack = ActiveSettings.IncludeCallstacksOnVeryVerbose;
+		break;
+	default:
+		break;
 	}
 	std::string VerbosityString = LogVerbosityToString(Verbosity);
 
@@ -188,16 +163,16 @@ void FElasticTelemetryOutputDevice::Serialize(const TCHAR* Message, ELogVerbosit
 	static const std::string VerbosityKey("Verbosity");
 
 	// --------------------------------------------------------------------------------------------
-	// IF the editor is in use AND IF an ensure is being triggered AND IF a debugger is present AND IF telemetry is configured to
-	// include callstacks for the requested error type THEN an unfornate string of events is triggered in UE4 internal macro
-	// processing and call stack generation that creates a deadlock. So, if you are running the editor under a debugger and have
-	// call stacks configured for this error level, do not expect them to show up.
+	// IF the editor is in use AND IF an ensure is being triggered AND IF a debugger is present AND IF telemetry is
+	// configured to include callstacks for the requested error type THEN an unfornate string of events is triggered in
+	// UE4 internal macro processing and call stack generation that creates a deadlock. So, if you are running the
+	// editor under a debugger and have call stacks configured for this error level, do not expect them to show up.
 
 	// Is this in the middle of an ensure AND is their a debugger present AND is the editor running?
 	// If so, don't print the call stack
-	bool bIsInEnsure = FDebug::IsEnsuring();
+	bool bIsInEnsure        = FDebug::IsEnsuring();
 	bool bIsDebuggerPresent = FPlatformMisc::IsDebuggerPresent();
-	bool bIsEditor = GIsEditor;
+	bool bIsEditor          = GIsEditor;
 	if (bIsInEnsure && bIsDebuggerPresent && bIsEditor)
 	{
 		PrintCallStack = false;
@@ -212,14 +187,15 @@ void FElasticTelemetryOutputDevice::Serialize(const TCHAR* Message, ELogVerbosit
 	if (PrintCallStack)
 	{
 		constexpr SIZE_T HumanReadableStringSize = 32792;
-		ANSICHAR		 HumanReadableString[HumanReadableStringSize];
-		const int32		 IgnoreCount = 2;
+		ANSICHAR         HumanReadableString[HumanReadableStringSize];
+		const int32      IgnoreCount = 2;
 
 		FGenericPlatformStackWalk::StackWalkAndDump(HumanReadableString, HumanReadableStringSize, IgnoreCount, nullptr);
 
 		static const std::string CallStackKey("CallStack");
-		const std::string		 CallStack(HumanReadableString);
-		Herald::log(*JsonTransformer, LType, Msg, CategoryKey, CategoryName, VerbosityKey, VerbosityString, CallStackKey, CallStack);
+		const std::string        CallStack(HumanReadableString);
+		Herald::log(*JsonTransformer, LType, Msg, CategoryKey, CategoryName, VerbosityKey, VerbosityString,
+		    CallStackKey, CallStack);
 	}
 	else
 	{

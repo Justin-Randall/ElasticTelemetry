@@ -11,21 +11,19 @@ class FElasticTelemetryModule;
 
 class ELASTICTELEMETRY_API FElasticTelemetryOutputDevice : public FOutputDevice
 {
-public:
-	explicit FElasticTelemetryOutputDevice(const FElasticTelemetryModule& Module);
+  public:
+	explicit FElasticTelemetryOutputDevice(const FElasticTelemetryModule & Module);
 	virtual ~FElasticTelemetryOutputDevice() override;
 
-	inline Herald::ILogTransformerPtr GetJsonTransformer() const
-	{
-		return JsonTransformer;
-	}
+	inline Herald::ILogTransformerPtr GetJsonTransformer() const { return JsonTransformer; }
+	inline Herald::ILogWriterPtr      GetElasticWriter() const { return ElasticWriter; }
 
-protected:
-	virtual void Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const class FName& Category) override;
+  protected:
+	virtual void Serialize(const TCHAR * Message, ELogVerbosity::Type Verbosity, const class FName & Category) override;
 
-	mutable FCriticalSection	   ProcessingRequestLock;
-	size_t						   ProcessingRequestCount;
-	Herald::ILogTransformerPtr	   JsonTransformer;
-	Herald::ILogWriterPtr		   ElasticWriter;
-	const FElasticTelemetryModule& ElasticTelemetry;
+	mutable FCriticalSection        ProcessingRequestLock;
+	size_t                          ProcessingRequestCount;
+	Herald::ILogTransformerPtr      JsonTransformer;
+	Herald::ILogWriterPtr           ElasticWriter;
+	const FElasticTelemetryModule & ElasticTelemetry;
 };

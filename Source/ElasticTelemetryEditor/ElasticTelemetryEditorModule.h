@@ -4,12 +4,28 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ElasticTelemetryQuerySettings.h"
+#include "ElasticQueryClient.h"
 #include "Modules/ModuleManager.h"
 
-class FElasticTelemetryEditorModule : public IModuleInterface
+DECLARE_LOG_CATEGORY_EXTERN(TelemetryEditorLog, Log, All);
+
+class FElasticTelemetryEditorModule : public IModuleInterface, public IPropertyUpdateListener
 {
-public:
+  public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
+
+	inline const FElasticTelemetryQuerySettings & GetQuerySettings() const { return QueryConfig->GetQuerySettings(); }
+	inline const FElasticQueryClient &            GetQueryClient() const { return QueryClient; }
+
+  protected:
+	void        UpdateConfig();
+	inline void OnPropertyUpdated() override { UpdateConfig(); }
+
+  private:
+	mutable FCriticalSection       SettingsLock;
+	UElasticTelemetryQueryConfig * QueryConfig;
+	FElasticQueryClient            QueryClient;
 };

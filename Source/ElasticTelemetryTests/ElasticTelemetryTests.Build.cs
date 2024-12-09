@@ -15,7 +15,8 @@ public class ElasticTelemetryTests : ModuleRules
 		// Public and Private Include Paths
 		PublicIncludePaths.AddRange(
 			new string[] {
-				Path.Combine(ModuleDirectory)
+				Path.Combine(ModuleDirectory),
+				Path.Combine(ModuleDirectory, "../ElasticTelemetryEditor")
 			}
 		);
 
@@ -38,11 +39,14 @@ public class ElasticTelemetryTests : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"Core",
 				"CoreUObject",
 				"Engine",
+				"Herald",
 				"AutomationController",
 				"AutomationTest",
-				"ElasticTelemetry"
+				"ElasticTelemetry",
+				"ElasticTelemetryEditor"
 			}
 		);
 

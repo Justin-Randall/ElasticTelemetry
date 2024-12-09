@@ -19,20 +19,18 @@
 namespace Herald
 {
 	/// <summary>
-	/// Primarily an internal function to facilitate helper functions, though it can be used directly to configure the behavior of the JsonTransformer.
+	/// Primarily an internal function to facilitate helper functions, though it can be used directly to configure the
+	/// behavior of the JsonTransformer.
 	/// </summary>
 	/// <returns>An interface the active LogTransformer</returns>
 	inline ILogTransformerPtr GetJsonTransformer()
 	{
-		FElasticTelemetryModule& ElasticTelemetryModule = FModuleManager::GetModuleChecked<FElasticTelemetryModule>("ElasticTelemetry");
-
-		// Get the Transformer from the OutputDevice
-		// FElasticTelemetryOutputDevice* OutputDevice = ElasticTelemetryModule.GetOutputDevice();
-		// if (!OutputDevice)
-		//	return nullptr;
+		FElasticTelemetryModule & ElasticTelemetryModule =
+		    FModuleManager::GetModuleChecked<FElasticTelemetryModule>("ElasticTelemetry");
 
 		return ElasticTelemetryModule.GetJsonTransformer();
 	}
+
 	/// <summary>
 	/// addHeader will insert a key-value pair into the headers of the JsonTransformer.
 	/// These are included with each log message transformed. Use cases include:
@@ -43,14 +41,14 @@ namespace Herald
 	/// <param name="Key"></param>
 	/// <param name="Value"></param>
 	template <typename KeyType, typename ValueType>
-	void addHeader(const KeyType& Key, const ValueType& Value)
+	void addHeader(const KeyType & Key, const ValueType & Value)
 	{
 		auto JsonTransformer = GetJsonTransformer();
 		if (!JsonTransformer)
 			return;
 
 		// convert to strings
-		std::string KeyStr = std::to_string(Key);
+		std::string KeyStr   = std::to_string(Key);
 		std::string ValueStr = std::to_string(Value);
 
 		JsonTransformer->addHeader(KeyStr, ValueStr);
@@ -63,7 +61,7 @@ namespace Herald
 	/// <typeparam name="ValueType"></typeparam>
 	/// <param name="Key"></param>
 	template <typename KeyType, typename ValueType>
-	void removeHeader(const KeyType& Key)
+	void removeHeader(const KeyType & Key)
 	{
 		auto JsonTransformer = GetJsonTransformer();
 		if (!JsonTransformer)
@@ -87,7 +85,7 @@ namespace Herald
 	/// <param name="Message"></param>
 	/// <param name="...args">Key, Value pairs</param>
 	template <typename... Args>
-	void log(const LogLevels LogLevel, const FString& Message, Args... args)
+	void log(const LogLevels LogLevel, const FString & Message, Args... args)
 	{
 		if (!isLogLevelEnabled(LogLevel))
 			return;
@@ -100,7 +98,7 @@ namespace Herald
 		Herald::log(*JsonTransformer, LogLevel, std::string(TCHAR_TO_UTF8(*Message)), args...);
 	}
 
-	inline void log(LogLevels Level, const FString& Message)
+	inline void log(LogLevels Level, const FString & Message)
 	{
 		if (!isLogLevelEnabled(Level))
 			return;
@@ -112,4 +110,44 @@ namespace Herald
 
 		Herald::log(*JsonTransformer, Level, std::string(TCHAR_TO_UTF8(*Message)));
 	}
+
+	/// <summary>
+	/// Primarily an internal function to facilitate helper functions, though it can be used directly to configure the
+	/// behavior of the JsonTransformer.
+	/// </summary>
+	/// <returns>An interface the active LogTransformer</returns>
+	inline ILogTransformerPtr GetEventTransformer()
+	{
+		FElasticTelemetryModule & ElasticTelemetryModule =
+		    FModuleManager::GetModuleChecked<FElasticTelemetryModule>("ElasticTelemetry");
+
+		return ElasticTelemetryModule.GetEventTransformer();
+	}
+
+	template <typename... Args>
+	void event(const FString & EventName, Args... args)
+	{
+		auto EventTransformer = GetEventTransformer();
+		if (!EventTransformer)
+			return;
+
+		Herald::event(*EventTransformer, std::string(TCHAR_TO_UTF8(*EventName)), args...);
+	}
+
+	inline void event(const FString & EventName)
+	{
+		auto EventTransformer = GetEventTransformer();
+		if (!EventTransformer)
+			return;
+
+		Herald::event(*EventTransformer, std::string(TCHAR_TO_UTF8(*EventName)));
+	}
+	// TODO: move this to another header
+	// template <typename... Args>
+	// void event(const FString & Type, Args... args)
+	//{
+	//	// TODO: Have a LogLevel that is ALWAYS passing for events... Might need to poke Herald.
+	//	//       Also, intentionally breaking the code here until there is a special JsonEventTransformer.
+	//	Herald::log(JsonTransformer, LogLevels::Debug, std::string(TCHAR_TO_UTF8(*Type)), args...);
+	//}
 } // namespace Herald

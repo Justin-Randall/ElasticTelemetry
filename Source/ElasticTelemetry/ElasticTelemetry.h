@@ -6,6 +6,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 #include "ElasticTelemetryEnvironmentSettings.h"
+#include "ElasticTelemetryQuerySettings.h"
 #include "Herald/LogLevels.hpp"
 #include "Herald/ILogTransformer.hpp"
 
@@ -22,7 +23,7 @@ class FElasticTelemetryOutputDevice;
 /// </summary>
 class ELASTICTELEMETRY_API FElasticTelemetryModule : public IModuleInterface
 {
-public:
+  public:
 	FElasticTelemetryModule();
 	virtual ~FElasticTelemetryModule();
 
@@ -30,10 +31,13 @@ public:
 	virtual void ShutdownModule() override;
 
 	/// <summary>
-	/// Get the active configuration settings for the module. Returns by value. Locks the settings to allow real-time changes to be made in the editor.
+	/// Get the active configuration settings for the module. Returns by value. Locks the settings to allow real-time
+	/// changes to be made in the editor.
 	/// </summary>
 	/// <returns>Active configuration settings.</returns>
 	FElasticTelemetrySettings GetSettings() const;
+
+	FElasticTelemetryQuerySettings GetQuerySettings() const { return EventSettings; }
 
 	/// <summary>
 	/// The OutputDevice contains a log transformer that can be used to add headers to the log messages.
@@ -41,21 +45,26 @@ public:
 	/// <returns>ILogTransformerPtr with addHeader()/removeHeader()</returns>
 	Herald::ILogTransformerPtr GetJsonTransformer() const;
 
-protected:
+	Herald::ILogTransformerPtr GetEventTransformer() const { return EventTransformer; }
+
 	void UpdateConfig();
 
-protected:
+  protected:
 	// Since settings may be used by different threads, and because
 	// in the editor, it would be nice to have them updated in real-time,
 	// to test configurations, these are by-value and locked when accessed.
-	mutable FCriticalSection  SettingsLock;
-	FElasticTelemetrySettings Settings;
-
+	mutable FCriticalSection       SettingsLock;
+	FElasticTelemetrySettings      Settings;
+	FElasticTelemetryQuerySettings EventSettings;
 	// This is instantiated in StartupModule and deleted in ShutdownModule
 	// It addes itself to the global log system via GLog->AddOutputDevice()
 	// in its constructor. All UE_LOG() will invoke OutputDevice->Serialize()
 	// which in turn will pass the log message to the JsonTransformer. Once the
 	// transformer is done with the message, it will be passed to the ElasticWriter
 	// which will queue it up for delivery to the ElasticSearch server.
-	FElasticTelemetryOutputDevice* OutputDevice;
+	FElasticTelemetryOutputDevice * OutputDevice;
+
+	// Writer and transformer for events
+	Herald::ILogWriterPtr      EventWriter;
+	Herald::ILogTransformerPtr EventTransformer;
 };

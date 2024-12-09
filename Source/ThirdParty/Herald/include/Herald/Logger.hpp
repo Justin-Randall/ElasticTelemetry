@@ -6,6 +6,7 @@
 
 #include "Herald/ILogTransformer.hpp"
 #include "Herald/ILogTransformerBuilder.hpp"
+#include "Herald/LogLevels.hpp"
 
 namespace Herald
 {
@@ -36,5 +37,21 @@ namespace Herald
 		logger.log(LogEntry(logLevel, msg));
 	}
 
+	/// @brief A special log entry that represents and event. This is a structured event that is always logged and creates a map of json
+	/// objects.
+	/// @tparam ...Args Variadic args that are key value pairs, where the value can be any json serializable type.
+	/// @param logger
+	/// @param msg
+	/// @param ...args
+	template <typename... Args> void event(ILogTransformer & logger, const std::string & msg, Args... args)
+	{
+		LogEntry entry(LogLevels::Event, msg, args...);
+		logger.log(entry);
+	}
+
+	/// @brief A special log entry that represents and event.
+	/// @param logger
+	/// @param msg
+	inline void event(ILogTransformer & logger, const std::string & msg) { logger.log(LogEntry(LogLevels::Event, msg)); }
 } // namespace Herald
 #endif //_INCLUDED_HeraldLogger_hpp

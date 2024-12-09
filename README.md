@@ -1,12 +1,14 @@
 # ElasticTelemetry
 
-An Unreal Engine plugin for sending UE_LOG events to an ElasticSearch server. Also supports custom logs. All in well-formed JSON.
+An Unreal Engine plugin for sending UE_LOG events to an ElasticSearch server. Also supports custom events. All in well-formed JSON. In addition to writing, there is an editor module in the plugin to query events. This is used often for in-editor heat-maps or custom views on user-generated events. For example, a PvP team shooter may want a log player deaths so designers can determine if the actual conflict areas match the intended design. If not, gain some insights about the map layout or rules.
 
 ## Getting Started
 
 1. Setup or identify an ElasticSearch endpoint for the plugin to use.
 
-2. On the ElasticSearch server (or through the Kibana front-end), create a "writer" account for the endpoint. There should be no read access for this account. It should be restricted to specific index patterns. 
+2. On the ElasticSearch server (or through the Kibana front-end), create a "writer" account for the endpoint. There should be no read access for this account. It should be restricted to specific index patterns. This is what will be in the "game" code for the build.
+
+3. On the ElasticSearch server (or through the Kibana front-end), create a "reader" account for the editor. This is a read-only account used by the editor to query event data written to ElasticSearch.
 
    ElasticSearch defaults to the use of TLS, so if the installation does not have a publicly valid certificate, be sure to install the cert for Unreal (which uses libcurl, same instructions apply). If a typical browser can reach the ElasticSearch server, then there should not need to be more to do.
 
