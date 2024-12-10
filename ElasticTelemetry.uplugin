@@ -22,13 +22,14 @@
     },
     {
       "Name": "ElasticTelemetryTests",
-      "Type": "DeveloperTool",
+      "Type": "Editor",
       "LoadingPhase": "Default"
     },
     {
       "Name": "ElasticTelemetryEditor",
       "Type": "Editor",
-      "LoadingPhase": "PostEngineInit"
+      "LoadingPhase": "PostEngineInit",
+      "WhitelistTargets": [ "Editor" ]
     }
   ]
 }

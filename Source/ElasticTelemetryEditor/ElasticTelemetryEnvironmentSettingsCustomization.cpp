@@ -1,6 +1,8 @@
 // Copyright 2016-2024 Playscale Ptd Ltd and Justin Randall
 // MIT License, see LICENSE file for full details.
 
+#if WITH_EDITOR
+
 #include "ElasticTelemetryEnvironmentSettingsCustomization.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
@@ -13,9 +15,10 @@ TSharedRef<IDetailCustomization> FElasticTelemetryEnvironmentSettingsCustomizati
 	return MakeShareable(new FElasticTelemetryEnvironmentSettingsCustomization);
 }
 
-TSharedPtr<FString> FElasticTelemetryEnvironmentSettingsCustomization::GetInitiallySelectedItem(const FString& CurrentValue) const
+TSharedPtr<FString> FElasticTelemetryEnvironmentSettingsCustomization::GetInitiallySelectedItem(
+    const FString & CurrentValue) const
 {
-	for (const auto& Option : Options)
+	for (const auto & Option : Options)
 	{
 		if (Option.IsValid() && *Option == CurrentValue)
 		{
@@ -27,13 +30,16 @@ TSharedPtr<FString> FElasticTelemetryEnvironmentSettingsCustomization::GetInitia
 	return Options.Num() > 0 ? Options[0] : nullptr;
 }
 
-void FElasticTelemetryEnvironmentSettingsCustomization::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
+void FElasticTelemetryEnvironmentSettingsCustomization::CustomizeDetails(IDetailLayoutBuilder & DetailBuilder)
 {
-	ActiveEnvHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UElasticTelemetryEnvironmentSettings, ActiveEnvironment));
-	EnvironmentsHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UElasticTelemetryEnvironmentSettings, Environments));
+	ActiveEnvHandle =
+	    DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UElasticTelemetryEnvironmentSettings, ActiveEnvironment));
+	EnvironmentsHandle =
+	    DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UElasticTelemetryEnvironmentSettings, Environments));
 	DetailBuilder.HideProperty(ActiveEnvHandle);
 
-	EnvironmentsHandle->SetOnPropertyValueChanged(FSimpleDelegate::CreateSP(this, &FElasticTelemetryEnvironmentSettingsCustomization::RepopulateOptions));
+	EnvironmentsHandle->SetOnPropertyValueChanged(
+	    FSimpleDelegate::CreateSP(this, &FElasticTelemetryEnvironmentSettingsCustomization::RepopulateOptions));
 
 	RepopulateOptions();
 
@@ -41,24 +47,22 @@ void FElasticTelemetryEnvironmentSettingsCustomization::CustomizeDetails(IDetail
 	ActiveEnvHandle->GetValue(CurrentValue);
 
 	DetailBuilder.EditCategory("ElasticTelemetryEnvironmentSettings")
-		.AddCustomRow(FText::FromString("Active Environment"))
-		.NameContent()
-			[ActiveEnvHandle->CreatePropertyNameWidget()]
-		.ValueContent()
-			[SAssignNew(OptionsComboBox, SComboBox<TSharedPtr<FString>>)
-					.OptionsSource(&Options)
-					.OnSelectionChanged(this, &FElasticTelemetryEnvironmentSettingsCustomization::OnEnvironmentSelected, ActiveEnvHandle.ToSharedRef())
-					.InitiallySelectedItem(GetInitiallySelectedItem(CurrentValue))
-					.OnGenerateWidget_Lambda([](TSharedPtr<FString> InOption) -> TSharedRef<SWidget> {
-						return SNew(STextBlock).Text(FText::FromString(*InOption));
-					})
-					.Content()
-						[SNew(STextBlock)
-								.Text_Lambda([this]() {
-									FString Value;
-									ActiveEnvHandle->GetValue(Value);
-									return FText::FromString(Value);
-								})]];
+	    .AddCustomRow(FText::FromString("Active Environment"))
+	    .NameContent()[ActiveEnvHandle->CreatePropertyNameWidget()]
+	    .ValueContent()[SAssignNew(OptionsComboBox, SComboBox<TSharedPtr<FString>>)
+	                        .OptionsSource(&Options)
+	                        .OnSelectionChanged(this,
+	                            &FElasticTelemetryEnvironmentSettingsCustomization::OnEnvironmentSelected,
+	                            ActiveEnvHandle.ToSharedRef())
+	                        .InitiallySelectedItem(GetInitiallySelectedItem(CurrentValue))
+	                        .OnGenerateWidget_Lambda([](TSharedPtr<FString> InOption) -> TSharedRef<SWidget> {
+		                        return SNew(STextBlock).Text(FText::FromString(*InOption));
+	                        })
+	                        .Content()[SNew(STextBlock).Text_Lambda([this]() {
+		                        FString Value;
+		                        ActiveEnvHandle->GetValue(Value);
+		                        return FText::FromString(Value);
+	                        })]];
 }
 
 void FElasticTelemetryEnvironmentSettingsCustomization::SetupKeyChangeListeners()
@@ -74,13 +78,11 @@ void FElasticTelemetryEnvironmentSettingsCustomization::SetupKeyChangeListeners(
 	for (uint32 i = 0; i < NumElements; ++i)
 	{
 		TSharedPtr<IPropertyHandle> ElementHandle = EnvironmentsHandle->GetChildHandle(i);
-		TSharedPtr<IPropertyHandle> KeyHandle = ElementHandle->GetKeyHandle();
+		TSharedPtr<IPropertyHandle> KeyHandle     = ElementHandle->GetKeyHandle();
 
 		if (KeyHandle.IsValid())
 		{
-			KeyHandle->SetOnPropertyValueChanged(FSimpleDelegate::CreateLambda([this]() {
-				RepopulateOptions();
-			}));
+			KeyHandle->SetOnPropertyValueChanged(FSimpleDelegate::CreateLambda([this]() { RepopulateOptions(); }));
 		}
 	}
 }
@@ -89,25 +91,24 @@ void FElasticTelemetryEnvironmentSettingsCustomization::RepopulateOptions()
 {
 	Options.Empty();
 
-	if (const UElasticTelemetryEnvironmentSettings* Settings = GetDefault<UElasticTelemetryEnvironmentSettings>())
+	if (const UElasticTelemetryEnvironmentSettings * Settings = GetDefault<UElasticTelemetryEnvironmentSettings>())
 	{
-		for (const auto& Elem : Settings->Environments)
+		for (const auto & Elem : Settings->Environments)
 		{
 			Options.Add(MakeShared<FString>(Elem.Key));
 		}
 
 		FString ActiveEnvironmentValue;
 		ActiveEnvHandle->GetValue(ActiveEnvironmentValue);
-		if (!Options.ContainsByPredicate([&](const TSharedPtr<FString>& Option) { return *Option == ActiveEnvironmentValue; }))
+		if (!Options.ContainsByPredicate(
+		        [&](const TSharedPtr<FString> & Option) { return *Option == ActiveEnvironmentValue; }))
 		{
 			ActiveEnvHandle->SetValue(*Options[0]);
 		}
 
 		if (GEditor)
 		{
-			GEditor->GetTimerManager()->SetTimerForNextTick([this]() {
-				SetupKeyChangeListeners();
-			});
+			GEditor->GetTimerManager()->SetTimerForNextTick([this]() { SetupKeyChangeListeners(); });
 		}
 
 		// Refresh the combo box to show the updated options
@@ -118,10 +119,14 @@ void FElasticTelemetryEnvironmentSettingsCustomization::RepopulateOptions()
 	}
 }
 
-void FElasticTelemetryEnvironmentSettingsCustomization::OnEnvironmentSelected(TSharedPtr<FString> SelectedOption, ESelectInfo::Type SelectInfo, TSharedRef<IPropertyHandle> PropertyHandle)
+void FElasticTelemetryEnvironmentSettingsCustomization::OnEnvironmentSelected(
+    TSharedPtr<FString> SelectedOption, ESelectInfo::Type SelectInfo, TSharedRef<IPropertyHandle> PropertyHandle)
 {
 	if (SelectedOption.IsValid())
 	{
-		PropertyHandle->SetValue(*SelectedOption); // Update the ActiveEnvironment property when a new option is selected
+		PropertyHandle->SetValue(
+		    *SelectedOption); // Update the ActiveEnvironment property when a new option is selected
 	}
 }
+
+#endif // WITH_EDITOR

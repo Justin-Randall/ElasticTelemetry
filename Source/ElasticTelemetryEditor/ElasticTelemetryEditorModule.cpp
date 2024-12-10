@@ -1,6 +1,8 @@
 // Copyright 2016-2024 Playscale Ptd Ltd and Justin Randall
 // MIT License, see LICENSE file for full details.
 
+#if WITH_EDITOR
+
 #include "ElasticTelemetryEditorModule.h"
 #include "ElasticTelemetry.h"
 #include "ElasticTelemetryEnvironmentSettings.h"
@@ -78,3 +80,5 @@ void FElasticTelemetryEditorModule::UpdateConfig()
 }
 
 #undef LOCTEXT_NAMESPACE
+
+#endif // WITH_EDITOR

@@ -40,8 +40,10 @@ class ELASTICTELEMETRY_API UElasticTelemetryQueryConfig : public UDeveloperSetti
 	inline const FElasticTelemetryQuerySettings & GetQuerySettings() const { return QuerySettings; }
 	inline void SetListener(IPropertyUpdateListener * InListener) { Listener = InListener; }
 
+#if WITH_EDITOR
   protected:
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent & PropertyChangedEvent) override;
+#endif // WITH_EDITOR
 
   private:
 	UPROPERTY(Config, EditAnywhere)

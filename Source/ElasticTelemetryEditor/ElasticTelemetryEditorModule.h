@@ -1,6 +1,8 @@
 // Copyright 2016-2024 Playscale Ptd Ltd and Justin Randall
 // MIT License, see LICENSE file for full details.
 
+#if WITH_EDITOR
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -29,3 +31,5 @@ class FElasticTelemetryEditorModule : public IModuleInterface, public IPropertyU
 	UElasticTelemetryQueryConfig * QueryConfig;
 	FElasticQueryClient            QueryClient;
 };
+
+#endif // WITH_EDITOR

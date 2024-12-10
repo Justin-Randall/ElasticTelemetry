@@ -14,6 +14,7 @@ UElasticTelemetryQueryConfig::UElasticTelemetryQueryConfig()
 {
 }
 
+#if WITH_EDITOR
 void UElasticTelemetryQueryConfig::PostEditChangeProperty(FPropertyChangedEvent & PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -22,3 +23,4 @@ void UElasticTelemetryQueryConfig::PostEditChangeProperty(FPropertyChangedEvent 
 		Listener->OnPropertyUpdated();
 	}
 }
+#endif // WITH_EDITOR

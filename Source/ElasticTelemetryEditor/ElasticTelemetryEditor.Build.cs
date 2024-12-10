@@ -10,7 +10,7 @@ public class ElasticTelemetryEditor : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		// Make sure this module only loads in the Editor
-		if (Target.bBuildEditor == true)
+		if (Target.Type == TargetType.Editor)
 		{
 			PublicDependencyModuleNames.AddRange(
 				new string[]

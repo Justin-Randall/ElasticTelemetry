@@ -1,6 +1,8 @@
 // Copyright 2016-2024 Playscale Ptd Ltd and Justin Randall
 // MIT License, see LICENSE file for full details.
 
+#if WITH_EDITOR
+
 #include "StringConversions.h"
 #include "Misc/AutomationTest.h"
 #include "GenericPlatform/GenericPlatformMisc.h"
@@ -169,3 +171,5 @@ bool FElasticTelemetryEventIntegratedTest::RunTest(const FString & Parameters)
 	});
 	return false; // fail until the event posts and is verified in a query
 }
+
+#endif // WITH_EDITOR
