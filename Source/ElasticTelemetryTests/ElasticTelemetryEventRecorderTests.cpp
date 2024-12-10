@@ -129,6 +129,171 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FElasticTelemetryEventIntegratedTest,
     "ElasticTelemetry.EventRecorder.SendEventsToElasticSearch",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
+class FWaitForTelemetryQueryLatentCommand : public IAutomationLatentCommand
+{
+  public:
+	FWaitForTelemetryQueryLatentCommand(FElasticTelemetryEventIntegratedTest * InTest, const FString & InJsonQuery)
+	    : Test(InTest)
+	    , JsonQuery(InJsonQuery)
+	    , bQueryIssued(false)
+	    , bRetrieved(false)
+	    , Retries(0)
+	{
+	}
+
+	virtual bool Update() override
+	{
+		// If we haven't issued the query yet, do it now
+		if (!bQueryIssued)
+		{
+			bQueryIssued = true;
+			IssueQuery();
+		}
+
+		// If we've retrieved a successful response, we're done
+		if (bRetrieved)
+		{
+			Test->TestTrue(TEXT("Successfully retrieved telemetry event within time range"), true);
+			return true; // Command finished successfully
+		}
+
+		// If not retrieved yet, check if we need to retry
+		if (Retries >= MaxRetries)
+		{
+			Test->AddError(TEXT("Failed to retrieve telemetry event within the given retries"));
+			return true; // Command finished with failure
+		}
+
+		// Not done yet, try again next frame after sleeping 1 second
+		FPlatformProcess::Sleep(1.0f);
+		Retries++;
+		IssueQuery();
+		return false;
+	}
+
+  private:
+	void IssueQuery()
+	{
+		const auto & EditorModule =
+		    FModuleManager::GetModuleChecked<FElasticTelemetryEditorModule>("ElasticTelemetryEditor");
+		const auto & QueryClient = EditorModule.GetQueryClient();
+
+		QueryClient.QueryIndex(JsonQuery, [this](bool success, const FJsonObject & response) {
+			if (success)
+			{
+				// Validate that we got some hits
+				if (!response.HasField(TEXT("hits")))
+				{
+					Test->AddError(TEXT("Response missing 'hits' field"));
+					return;
+				}
+
+				TSharedPtr<FJsonObject> hitsObj = response.GetObjectField(TEXT("hits"));
+				if (!hitsObj.IsValid())
+				{
+					Test->AddError(TEXT("'hits' is not a valid JSON object"));
+					return;
+				}
+
+				if (!hitsObj->HasField(TEXT("total")))
+				{
+					Test->AddError(TEXT("No 'total' field in 'hits' object"));
+					return;
+				}
+
+				TSharedPtr<FJsonObject> totalObj = hitsObj->GetObjectField(TEXT("total"));
+				if (!totalObj.IsValid() || !totalObj->HasField(TEXT("value")))
+				{
+					Test->AddError(TEXT("No 'value' field in 'total' object"));
+					return;
+				}
+
+				double totalValue = totalObj->GetNumberField(TEXT("value"));
+				Test->TestTrue(TEXT("At least one hit returned"), totalValue > 0);
+
+				// Now check the hits array
+				const TArray<TSharedPtr<FJsonValue>> * hitsArray = nullptr;
+				if (!hitsObj->TryGetArrayField(TEXT("hits"), hitsArray) || !hitsArray || hitsArray->Num() == 0)
+				{
+					Test->AddError(TEXT("No hits array or empty hits array"));
+					return;
+				}
+
+				bool foundMachineInfoTestEvent = false;
+
+				// Look through each hit for the expected event and properties
+				for (const TSharedPtr<FJsonValue> & hitVal : *hitsArray)
+				{
+					if (!hitVal.IsValid())
+						continue;
+
+					TSharedPtr<FJsonObject> hitObj = hitVal->AsObject();
+					if (!hitObj.IsValid())
+						continue;
+
+					if (!hitObj->HasField(TEXT("_source")))
+						continue;
+
+					TSharedPtr<FJsonObject> sourceObj = hitObj->GetObjectField(TEXT("_source"));
+					if (!sourceObj.IsValid())
+						continue;
+
+					if (!sourceObj->HasField(TEXT("log")))
+						continue;
+
+					TSharedPtr<FJsonObject> logObj = sourceObj->GetObjectField(TEXT("log"));
+					if (!logObj.IsValid())
+						continue;
+
+					// Check the event name
+					if (logObj->HasField(TEXT("event")))
+					{
+						FString eventName = logObj->GetStringField(TEXT("event"));
+						if (eventName == "MachineInfoTestEvent")
+						{
+							foundMachineInfoTestEvent = true;
+
+							// Validate some fields we posted
+							if (logObj->HasField(TEXT("CPUBrand")))
+							{
+								FString CPUBrand = logObj->GetStringField(TEXT("CPUBrand"));
+								// We know what we sent was some known brand, e.g. "GenericCPUBrand"
+								Test->TestEqual(TEXT("CPUBrand matches expected"), CPUBrand, TEXT("GenericCPUBrand"));
+							}
+							else
+							{
+								Test->AddError(TEXT("Missing 'CPUBrand' in log data"));
+							}
+
+							// You can add more checks here for CPUCount, CPUInfo, etc. as needed
+
+							// If all we needed was to confirm at least one correct event hit, we can break here.
+							break;
+						}
+					}
+				}
+
+				Test->TestTrue(TEXT("Found at least one MachineInfoTestEvent in the hits"), foundMachineInfoTestEvent);
+
+				// Mark retrieval as successful
+				bRetrieved = true;
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Query failed"));
+			}
+		});
+	}
+
+  private:
+	static constexpr int                   MaxRetries = 10;
+	FElasticTelemetryEventIntegratedTest * Test;
+	FString                                JsonQuery;
+	bool                                   bQueryIssued;
+	bool                                   bRetrieved;
+	int                                    Retries;
+};
+
 bool FElasticTelemetryEventIntegratedTest::RunTest(const FString & Parameters)
 {
 	// get the machine FGuid generated by Unreal
@@ -146,30 +311,50 @@ bool FElasticTelemetryEventIntegratedTest::RunTest(const FString & Parameters)
 	Herald::event("MachineInfoTestEvent", "CPUVendor", CPUVendor, "CPUBrand", CPUBrand, "CPUInfo", CPUInfo, "CPUCount",
 	    CPUCount, "CPUName", CPUName, "DeviceID", DeviceId, "OSVersion", OSVersion, "OSName", OSName);
 
+	std::chrono::system_clock::time_point now              = std::chrono::system_clock::now();
+	const auto                            fiveMinutesAgo   = std::to_string(now - std::chrono::minutes(5));
+	const auto                            fiveMinutesAhead = std::to_string(now + std::chrono::minutes(5));
+
 	FSearch Query;
 	Query.SetResultSize(10000)
 	    .WithBoolQuery()
 	    .AndHasTermFilter(FQueryTerm("log.event.keyword", "MachineInfoTestEvent"))
-	    .AndHasRangeFilter(FQueryRange("timestamp", "2024-12-04T06:00:00Z", "2024-12-04T08:00:00Z"));
+	    .AndHasRangeFilter(FQueryRange("timestamp", fiveMinutesAgo, fiveMinutesAhead));
 
 	std::string json = rapidjson::to_json(Query);
-
+	FString     JsonQuery(json.c_str());
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForTelemetryQueryLatentCommand(this, JsonQuery));
+#if 0
 	// craft queries
 	const auto & EditorModule =
 	    FModuleManager::GetModuleChecked<FElasticTelemetryEditorModule>("ElasticTelemetryEditor");
 	const auto & QueryClient = EditorModule.GetQueryClient();
 
-	QueryClient.QueryIndex(FString(json.c_str()), [](bool success, const FJsonObject & response) {
-		if (success)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Query success"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Query failed"));
-		}
-	});
-	return false; // fail until the event posts and is verified in a query
-}
+	bool retrieved = false;
+	int  retries   = 0;
+	while (retries < 10 && !retrieved)
+	{
+		FPlatformProcess::Sleep(1.0f);
 
+		QueryClient.QueryIndex(FString(json.c_str()), [&retrieved](bool success, const FJsonObject & response) {
+			if (success)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Query success"));
+
+				retrieved = true;
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Query failed"));
+
+				// sleep for a second before retrying
+			}
+		});
+		++retries;
+	}
+
+	return retrieved;
+#endif // 0
+	return true;
+}
 #endif // WITH_EDITOR

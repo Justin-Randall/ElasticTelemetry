@@ -42,6 +42,7 @@ public class ElasticTelemetryTests : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
+				"Json",
 				"Herald",
 				"AutomationController",
 				"AutomationTest",

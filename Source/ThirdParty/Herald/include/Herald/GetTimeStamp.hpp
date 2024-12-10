@@ -14,13 +14,10 @@
 
 namespace Herald
 {
-	inline std::string getTimeStamp()
+	inline std::string getTimeStamp(const std::chrono::system_clock::time_point & timePoint)
 	{
-		auto        currentChronoTime = std::chrono::system_clock::now();
-		std::time_t currentTime       = std::chrono::system_clock::to_time_t(currentChronoTime);
-
-		std::chrono::milliseconds currentChronoMs =
-		    std::chrono::duration_cast<std::chrono::milliseconds>(currentChronoTime.time_since_epoch());
+		std::time_t               currentTime     = std::chrono::system_clock::to_time_t(timePoint);
+		std::chrono::milliseconds currentChronoMs = std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch());
 
 		struct tm timeInfo;
 #if defined(_WIN32) || defined(_WIN64)
@@ -36,5 +33,16 @@ namespace Herald
 		          << (currentChronoMs.count() % 1000) << std::put_time(&timeInfo, "%z");
 		return timeStamp.str();
 	}
+
+	inline std::string getTimeStamp()
+	{
+		auto currentChronoTime = std::chrono::system_clock::now();
+		return getTimeStamp(currentChronoTime);
+	}
 } // namespace Herald
+
+namespace std
+{
+	inline std::string to_string(const std::chrono::system_clock::time_point & timePoint) { return Herald::getTimeStamp(timePoint); }
+} // namespace std
 #endif //_INCLUDED_GetTimeStamp_hpp
