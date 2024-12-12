@@ -121,11 +121,7 @@ The json serialization is pretty standard C++ (not Unreal's own implementation) 
 
 ## Differences From the Old, UnrealEngine 4.x Module Version
 
-There are two features missing with the update.
-
-First, real-time updates to the configuration from the editor are not applied. A change to the configuration requires restarting the editor.
-
-Second, the reader/query functionality is not present. There have been some changes over the years to the ElasticSearch API, so there is not (at present) suppoort for a "query" mode to retrieve index data from ElasticSearch for use in the engine (such as for visualizations and design analytics from within the editor).
+Real-time updates to the logging configuration from the editor are not applied. A change to the configuration requires restarting the editor. Query updates are applied.
 
 ## ThirdParty
 
