@@ -98,6 +98,12 @@ void FElasticTelemetryModule::StartupModule()
 
 void FElasticTelemetryModule::UpdateConfig()
 {
+	if (nullptr == OutputDevice)
+	{
+		UE_LOG(TelemetryLog, Display, TEXT("OutputDevice is null. This is normal when cooking."));
+		return;
+	}
+
 	const auto NewEnvSettings = GetDefault<UElasticTelemetryEnvironmentSettings>();
 	if (nullptr == NewEnvSettings)
 	{
